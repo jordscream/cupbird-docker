@@ -31,4 +31,4 @@ RUN chmod +x /root/entrypoint.sh
 
 WORKDIR "/var/www"
 
-ENTRYPOINT ["/root/entrypoint.sh"]
+CMD ["/root/entrypoint.sh"]
