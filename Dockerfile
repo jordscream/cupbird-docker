@@ -1,34 +1,30 @@
-FROM debian:wheezy
+FROM php:5.5-apache
 
-MAINTAINER Jordan Samouh <jordan.samouh@gmail.com>
+RUN sed -i 's/\/var\/www/\/var\/docker\/sources/g' /etc/apache2/apache2.conf \
+    && sed -i 's/\/html/\/web/g' /etc/apache2/apache2.conf
 
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E9C74FEEA2098A6E && \
-    echo "deb http://packages.dotdeb.org/ wheezy-php55 all" > /etc/apt/sources.list.d/php.list && \
-    echo "deb http://ftp.debian.org/debian wheezy-backports main contrib non-free" >> /etc/apt/sources.list.d/php.list
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        php5-cli \
-        php5-xdebug \
-        php5-imagick \
-        php5-gd \
-        php5-mongo \
-        php5-curl \
-        php5-mcrypt \
-        php5-intl \
-        php5-mysql \
-        php5-sqlite \
-        php5-redis \
-        php5-pgsql \
-    && rm -rf /var/lib/apt/lists/*
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y curl git && \
-    rm -rf /var/lib/apt/lists/*
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN a2enmod rewrite \
+    && apt-get update \
+    && echo mysql-server mysql-server/root_password password docker | debconf-set-selections \
+    && echo mysql-server mysql-server/root_password_again password docker | debconf-set-selections \
+    && apt-get install -y libpng12-dev libjpeg-dev libpq-dev mysql-server git drush gzip vim wget zip default-jre libxml2-dev ruby-compass php5-curl \
+    && docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr \
+    && docker-php-ext-install gd mbstring pdo pdo_mysql pdo_pgsql soap \
+    && a2ensite 000-default \
+    && apt-get clean && apt-get purge
 
-COPY entrypoint.sh /root/entrypoint.sh
-RUN chown root:root /root/entrypoint.sh 
-RUN chmod +x /root/entrypoint.sh
+ADD php.ini /usr/local/etc/php/php.ini
+ADD my.cnf /etc/mysql/my.cnf
 
-WORKDIR "/var/www"
+EXPOSE 3306
 
-CMD ["/root/entrypoint.sh"]
+WORKDIR /var/docker/sources
+
+RUN apt-get update && apt-get install -y php-pear libssh2-php php5-ssh2  \
+    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin
+
+ADD run.sh /tmp/run.sh
+RUN chmod 755 /tmp/run.sh
+CMD ["/tmp/run.sh"]
+
+
