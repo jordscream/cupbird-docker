@@ -18,6 +18,7 @@ ADD my.cnf /etc/mysql/my.cnf
 
 EXPOSE 3306
 
+RUN mkdir -p /var/docker
 WORKDIR /var/docker/sources
 
 RUN apt-get update && apt-get install -y php-pear libssh2-php php5-ssh2  \
